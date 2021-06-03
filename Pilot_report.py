@@ -22,7 +22,7 @@ Debugging pandas options:
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 '''
-
+__version__ = '0.0.4'
 def load_config():
     """Directory for RPT files. Set accordingly."""
     config = configparser.ConfigParser()
