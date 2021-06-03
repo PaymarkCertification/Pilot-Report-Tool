@@ -13,15 +13,22 @@ print("""  _____ _ _       _     _____                       _     _______      
  |_|   |_|_|\___/ \__| |_|  \_\___| .__/ \___/|_|   \__|    |_|\___/ \___/|_|
                                   | |                                        
                                   |_|                                        \n""")
+
+
+today = datetime.datetime.now()
+week_ago = today - datetime.timedelta(days=7)
+
 def load_config():
+    """Directory for RPT files. Set accordingly."""
     config = configparser.ConfigParser()
     config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Pilot_Report_Config.ini'))
     path = config.get('path', 'rpt_file')
     return path
 
 
-
+#TODO: Implement savefile. 
 def exporter():
+    """TDB"""
     import tkinter as tk
     from tkinter import filedialog
 
@@ -29,43 +36,39 @@ def exporter():
     root.withdraw()
     data = [['xlsx']]
 
-
-# pd.set_option('display.max_rows', None)
+'''
+Debugging pandas options:
+pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
-try:
-    os.chdir(load_config())
-except FileNotFoundError:
-    print(f'The system cannot find the file specified in {load_config.__name__}. '
-          f'Please check Pilot_Report_Config.ini is configured correctly.'
-          f'\nCurrent Working Dir: {load_config()}')
-    os.system('pause')
-    exit()
+'''
 
-
-mylist = [f for f in glob.glob("*.txt")]
-list=[]
-for file in mylist:
-    new = file[6:-4]
-    list.append(new.format(datetime.datetime.strptime(new, '%y%m%d')))
-
-today = datetime.datetime.now()
-week_ago = today - datetime.timedelta(days=7)
-print('Presets:\n7 days ago = ', week_ago, '\n')
-dateObjects = []
-for date in list:
-    convertedDateObject = datetime.datetime.strptime(date, '%y%m%d')
-    if convertedDateObject >= week_ago:
-        dateObjects.append(convertedDateObject.strftime('%y%m%d'))
-
-list_of_files = []
-for date in dateObjects:
+def process_f():
+    mylist = [f for f in glob.glob("*.txt")] # grabs all files in our RPT directory (load_config())
+    list=[]
     for file in mylist:
-        if date in file:
-            list_of_files.append(file)
-print('Processing the following files:\n', list_of_files, '\n')
+        new = file[6:-4] # strips the chars to retrieve date from file name
+        list.append(new.format(datetime.datetime.strptime(new, '%y%m%d')))
+
+    print('Presets:\n7 days ago = ', week_ago, '\n')
+
+
+    dateObjects = []
+    for date in list:
+        convertedDateObject = datetime.datetime.strptime(date, '%y%m%d') # converts stripped file name into date object
+        if convertedDateObject >= week_ago: 
+            dateObjects.append(convertedDateObject.strftime('%y%m%d')) # adds the date of the file to list if they are within the last 7 days
+
+    list_of_files = []
+    for date in dateObjects:
+        for file in mylist:
+            if date in file:
+                list_of_files.append(file) # Returns the filename for processing if the dates are in the filename
+    print('Processing the following files:\n', list_of_files, '\n')
+    return list_of_files
 
 
 def contentate_csvs(list_of):
+    '''concatenates our CSV file(s) into a single dataframe'''
     li = []
     for filename in list_of:
         df = pd.read_csv(filename, index_col=None, header=0, sep='|')
@@ -76,23 +79,17 @@ def contentate_csvs(list_of):
 
 def main(frame):
     import re
-    UniqueID = frame['Terminal'].unique()
+    UniqueID = frame['Terminal'].unique() # Returns all the unique terminal ID(s) found in the dataframe
     print(f'{50 * "*"}\nTerminal ID\'s Found:\n', frame['Terminal'].unique(), f'\n{50 * "*"}\n\n')
-    # pattern = r'^[a-zA-Z]+'
-    frame['Terminal'] = frame['Terminal'].astype(str)
-    # soft = frame['Card Number'].apply(lambda x: re.findall(pattern, x))
-    # df = frame.drop_duplicates(subset=['Terminal'])
-    # print(frame['Terminal'].dtypes)
+    frame['Terminal'] = frame['Terminal'].astype(str) # casts col as str for user input matching.
+
+    # TODO - Exception Handling of Input data 
     terminal_input = input('Enter Terminal ID [If multiple IDs separate by space]: ')
 
-    user_list = terminal_input.split()
+    user_list = terminal_input.split() #
+    print(type(user_list))
     print('\nProcessing the following ID(s):\n\t', user_list,'\n')
-    # for i in range(len(user_list)):
-    #     # convert each item to int type
-    #     user_list[i] = int(user_list[i])
-    # terminal = df.merge(df, soft, on='Terminal', how='right')
 
-    # print(df[['Terminal'] & df['Card Number'].apply(lambda x: re.findall(pattern, x))])
     date_time = today.strftime("%m-%d-%Y %H%M%S")
     try:
         absFilePath = os.path.abspath(__file__)
@@ -120,4 +117,13 @@ def main(frame):
 
 
 if __name__ == '__main__':
-    main(contentate_csvs(list_of_files))
+    try:
+        os.chdir(load_config())
+    except FileNotFoundError:
+        print(f'The system cannot find the file specified in {load_config.__name__}. '
+              f'Please check Pilot_Report_Config.ini is configured correctly.'
+              f'\nCurrent Working Dir: {load_config()}')
+        os.system('pause')
+        exit()
+    
+    main(contentate_csvs(process_f()))
