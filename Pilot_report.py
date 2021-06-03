@@ -92,20 +92,19 @@ def main(frame):
     date_time = today.strftime("%m-%d-%Y %H%M%S")
     try:
         absFilePath = os.path.abspath(__file__)
-        os.chdir(os.path.dirname(absFilePath))
+        os.chdir(os.path.dirname(absFilePath)) #change save folder to root path of CWD
     except FileNotFoundError:
         print('Exception Occured:', FileNotFoundError)
 
     writer = (pd.ExcelWriter(f'Pilot_Report {date_time}.xlsx', engine='xlsxwriter'))
 
     for userID in user_list:
-
         frame.loc[frame['Terminal'] == userID]\
-           .to_excel(writer, index=False, sheet_name=userID)
+           .to_excel(writer, index=False, sheet_name=userID) # set sheet name and writes sheet data with terminal ID from dataframe
         for column in frame:
             column_width = max(frame[column].astype(str).map(len).max(), len(column))
             col_idx = frame.columns.get_loc(column)
-            writer.sheets[str(userID)].set_column(col_idx, col_idx, column_width)
+            writer.sheets[str(userID)].set_column(col_idx, col_idx, column_width) # sets the width of the col
     saver = input("Save file? (Y/N)")
     if saver.lower() == 'y':
         writer.save()
