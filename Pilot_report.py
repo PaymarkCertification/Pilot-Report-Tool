@@ -14,9 +14,14 @@ print("""  _____ _ _       _     _____                       _     _______      
                                   | |                                        
                                   |_|                                        \n""")
 
-
+'''Date Const'''
 today = datetime.datetime.now()
-week_ago = today - datetime.timedelta(days=7)
+week_ago = today - datetime.timedelta(days=7) # adjust accordingly (days dependent on the files within the RPT report).
+'''
+Debugging pandas options:
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+'''
 
 def load_config():
     """Directory for RPT files. Set accordingly."""
@@ -36,11 +41,6 @@ def exporter():
     root.withdraw()
     data = [['xlsx']]
 
-'''
-Debugging pandas options:
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_columns', None)
-'''
 
 def process_f():
     mylist = [f for f in glob.glob("*.txt")] # grabs all files in our RPT directory (load_config())
@@ -86,8 +86,7 @@ def main(frame):
     # TODO - Exception Handling of Input data 
     terminal_input = input('Enter Terminal ID [If multiple IDs separate by space]: ')
 
-    user_list = terminal_input.split() #
-    print(type(user_list))
+    user_list = terminal_input.split() # returns list from user input
     print('\nProcessing the following ID(s):\n\t', user_list,'\n')
 
     date_time = today.strftime("%m-%d-%Y %H%M%S")
