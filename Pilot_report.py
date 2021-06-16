@@ -45,10 +45,13 @@ def exporter():
 def process_f():
     mylist = [f for f in glob.glob("*.txt")] # grabs all files in our RPT directory (load_config())
     list=[]
-    for file in mylist:
-        new = file[6:-4] # strips the chars to retrieve date from file name
-        list.append(new.format(datetime.datetime.strptime(new, '%y%m%d')))
-
+    try:
+        for file in mylist:
+            new = file[6:-4] # strips the chars to retrieve date from file name
+            list.append(new.format(datetime.datetime.strptime(new, '%y%m%d')))
+    except ValueError as e:
+        print(f'{process_f.__name__}')
+        exit()
     print('Presets:\n7 days ago = ', week_ago, '\n')
 
 
@@ -67,15 +70,31 @@ def process_f():
     return list_of_files
 
 
-def contentate_csvs(list_of):
+def concatentate_csvs(list_of):
     '''concatenates our CSV file(s) into a single dataframe'''
     li = []
-    for filename in list_of:
-        df = pd.read_csv(filename, index_col=None, header=0, sep='|')
-        li.append(df)
-    dframe = pd.concat(li, axis=0, ignore_index=True)
-    return dframe
+    try:
+        for filename in list_of:
+            df = pd.read_csv(filename, index_col=None, header=0, sep='|')
+            li.append(df)
+        dframe = pd.concat(li, axis=0, ignore_index=True)
+        return dframe
+    except ValueError as e:
+        print(f'{concatentate_csvs.__name__}: No objects to concatenate')
+        exit()
 
+#TODO complete highlight feature
+def highlight_cell():
+    # return
+    pass
+
+#TODO complete mapping
+def TH__Response_Map():
+    pass
+
+#TODO complete mapping
+def Route_To_Map():
+    pass
 
 def main(frame):
     import re
@@ -124,4 +143,4 @@ if __name__ == '__main__':
         os.system('pause')
         exit()
     
-    main(contentate_csvs(process_f()))
+    main(concatentate_csvs(process_f()))
