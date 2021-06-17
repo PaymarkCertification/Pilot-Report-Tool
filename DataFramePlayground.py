@@ -1,5 +1,5 @@
 import PySimpleGUI as sg
-import pilotgui as pg
+import typing
 import os
 import configparser
 import logging
@@ -9,8 +9,13 @@ import subprocess
 import sys
 import pandas as pd
 import numpy as np
+__version__ = '0.0.2'
 
-__version__ = '0.0.1'
+# ----- var ----- #
+# Initialize our containers
+tableList=[]
+frameDataForProcessing= pd.DataFrame()
+
 # ----- Logging Method ----- #
 class Handler(logging.StreamHandler):
 
@@ -34,36 +39,27 @@ class Handler(logging.StreamHandler):
         )
 
 # ----- exception handling func ----- #
-# TODO
-# def error_handle(errors=(Exception,), default_value=''):
-#     """
-#     @param func: callable function wrapper
-#     Helper function for exception handling of generic errors.
-#     """
-#     def decor(func):
-
-#         def wrapper(*args, **kwargs):
-#             try:
-#                 return func(*args, **kwargs)
-#             except:
-#                 print(f'unexpected error: {func.__name__} suffered an exception: {sys.exc_info()[0]}') 
-#                 logging.info(f'{func.__name__, sys.exc_info()[0]}')
-#             return default_value
-#         return wrapper
-#     return decor
-            
+def error_handler(func: typing.Callable):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except:
+            print(f'function {func.__name__} encountered an exception: {sys.exc_info()[0], sys.exc_info()[1]}') # Outputs to console
+            logging.info(f'{func.__name__, sys.exc_info()[0], sys.exc_info()[1]}')
+    return wrapper
 
 # ----- GUI Methods ---- #
-def load_config():
-        """Directory for RPT files. Set accordingly."""
-        config = configparser.ConfigParser()
-        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Pilot_Report_Config.ini'))
-        path = config.get('path', 'rpt_file')
-        return path
+def load_config() -> str:
+    """Directory for RPT files. Set accordingly."""
+    config = configparser.ConfigParser()
+    config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Pilot_Report_Config.ini'))
+    path = config.get('path', 'rpt_file')
+    return path
 
-def lastweek(string: int = 1):
+@error_handler
+def lastweek(string: int = 1) -> typing.Union[str, datetime.datetime]:
     """
-    @param string: Toggles return data
+    @param string: Toggles return type
     Returns last 7 days from today either as string or date"""
     today = datetime.datetime.now()
     week_ago = today - datetime.timedelta(days=7)
@@ -72,22 +68,33 @@ def lastweek(string: int = 1):
     else:
         return week_ago # returns date object
 
-
-def last_days():
-    """returns date object from widget"""
-    try:
-        date = values['datePick']
-        logging.info(f'date returned from widget: {date}')
-        selected_date = datetime.datetime.strptime(date,'%d/%m/%Y')
-        week = selected_date - datetime.timedelta(days=7)    
-    except ValueError as ve:
-        print(f'unexpected error: {ve, sys.exc_info()[0]}')
-        logging.info(f'Func {last_days.__name__} suffered exception\n {ve, sys.exc_info()[0]}')
+@error_handler
+def last_days() -> datetime.datetime:
+    date = values['datePick']
+    logging.info(f'date returned from widget: {date}')
+    selected_date = datetime.datetime.strptime(date,'%d/%m/%Y')
+    week = selected_date - datetime.timedelta(days=7)    
     return week
 
-def process_rpt_files():
+#TODO
+def highlights(userId):
+        check_seq = []
+        currentStan = 0
+        
+        global frameDataForProcessing; frameDataForProcessing['Terminal'] == userId
+        for i in frameDataForProcessing['Stan #'][1:]:
+            lastStan = currentStan
+            currentStan +=i
+            if currentStan == lastStan + 1:
+                frameDataForProcessing.style.apply(["background: green"])
+            elif lastStan == 0:
+                ...
+            else:
+                frameDataForProcessing.style.apply(["background: red"])
 
-    def concatentate_csvs(list_of):
+@error_handler
+def process_rpt_files():
+    def concatentate_csvs(list_of: list) -> pd.DataFrame:
         li = []
         logging.info(' Attempting to concatenate')
         try:
@@ -95,18 +102,23 @@ def process_rpt_files():
                 df = pd.read_csv(filename, index_col=None, header=0, sep='|')
                 li.append(df)
             dframe = pd.concat(li, axis=0, ignore_index=True)
-            dframe1 = dframe.replace(np.nan, '', regex=True)
-            print(dframe1[dframe1['Card Number']].str.match(pat = '^\w+'))
-                # print(dframe.groupby(['Terminal','Card Number'], as_index=False).last())
-        # except ValueError as e:
-        #     print(f'{concatentate_csvs.__name__}: No objects to concatenate')
+            dframe.replace(np.nan, '', regex=True)
+            dframe['Card Number'] = dframe['Card Number'].convert_dtypes(convert_integer=False, convert_boolean=False)
+            dframe['Terminal'] = dframe['Terminal'].apply(str)
+            global frameDataForProcessing; frameDataForProcessing = dframe
+            tableframe = dframe.groupby(['Terminal','Card Number'], as_index=False).last()
+            tableframe = tableframe[tableframe['Card Number'].str.contains('^[A-Za-z]')]
+            
+            
+            global tableList; tableList.append(tableframe[['Terminal','Card Number']].values.tolist())
+            window.FindElement('-Table-').Update(tableframe[['Terminal','Card Number']].values.tolist())
         except:
+            print(f' {sys.exc_info()[0], sys.exc_info()[1]}')
             logging.info(f' {sys.exc_info()[0], sys.exc_info()[1]}')
-
+        
+           
     try:
         os.chdir(load_config())
-        print(f"RPT path set to {load_config()}")
-            
     except FileNotFoundError:
         print(f'The system cannot find the file specified in {load_config.__name__}. '
         f'\nPlease check Pilot_Report_Config.ini is configured correctly.'
@@ -114,29 +126,28 @@ def process_rpt_files():
         logging.info(' Could not load file')
 
     print(f'Harvesting data from {values["datePick"]}')
-    mylist = [f for f in glob.glob("*.txt")]
-    list=[]
+    fileDirectory = [f for f in glob.glob("*.txt")]
+    formattedDate=[]
     try:
-        for file in mylist:
-            new = file[6:-4] # strips the chars to retrieve date from file name
-            list.append(new.format(datetime.datetime.strptime(new, '%y%m%d')))
-        
+        for rptfile in fileDirectory:
+            new = rptfile[6:-4] # strips the chars to retrieve date from file name
+            formattedDate.append(new.format(datetime.datetime.strptime(new, '%y%m%d')))  
     except ValueError as e:
         print(f'{process_rpt_files.__name__}: Value Error. Empty list.')
 
 
     dateObjects = []
-    for date in list:
+    for date in formattedDate:
         convertedDateObject = datetime.datetime.strptime(date, '%y%m%d') # converts stripped file name into date object
         logging.info(f' Convert str "{date}" to date object "{convertedDateObject}"')
-        
-        if convertedDateObject >= last_days(): #lastweek(string=0) 
+
+        if convertedDateObject >= last_days(): 
             dateObjects.append(convertedDateObject.strftime('%y%m%d')) # adds the date of the file to list if they are within the last 7 days
             logging.info(f' {convertedDateObject} appended to list')
 
     list_of_files = []
     for date in dateObjects:
-        for fileItem in mylist:
+        for fileItem in fileDirectory:
             if date in fileItem:
                 list_of_files.append(fileItem) # Returns the filename for processing if the dates are in the filename
     if list_of_files != '':
@@ -145,33 +156,70 @@ def process_rpt_files():
     else:
         print("No files found for selected date range. Select another date.")
         
+def grab_user_selected_id(selectionList: list) -> list:
+    if not selectionList:
+        print("\n")
+    else:
+        users_list =[]
+        for i in values['-Table-']:
+            users_list.append(tableList[0][i])
+        user_id=[item[0] for item in users_list]
+        print(f'Terminal ID(s) selected for report:\n{user_id}\n')    
+        return user_id
 
+@error_handler
+def process_report(user_id_list: list):
+    """
+    @param user_id_list: Returned from table widget
+    """
+    if not user_id_list:
+        print("No ID(s) selected for processing")
+    else:
+        foldername = sg.PopupGetFolder('Select folder', no_window=True)
+        print(f'Saving file to {foldername}')
+        date_time = datetime.datetime.today().strftime("%d-%m-%Y %H%M%S")
+        writer = (pd.ExcelWriter(f'{foldername}/Pilot_Report_{date_time}.xlsx', engine='xlsxwriter'))
+        try:
+            global frameDataForProcessing
+            for userID in user_id_list:
+                # highlights(userID)
+                # print(frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID])
+                frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID].to_excel(writer, index=False, sheet_name=userID) # set sheet name and writes sheet data with terminal ID from dataframe
+                print(f'processing {userID} data to excel')
+                for column in frameDataForProcessing:
+                    column_width = max(frameDataForProcessing[column].astype(str).map(len).max(), len(column))
+                    col_idx = frameDataForProcessing.columns.get_loc(column)
+                    writer.sheets[str(userID)].set_column(col_idx, col_idx, column_width)
+            writer.save()
+            print('Excel saved')
+        except TypeError:
+            print('No IDs to process')
 
 # ----- Column Definition ----- #
 colx = [
-    [sg.Text("Date:"), sg.Input(lastweek(), key='datePick', size=(20, 1)),sg.CalendarButton("Select Date", key='date', disabled=False, format='%d/%m/%Y')],
+    [sg.Text("Date:"), sg.Input(lastweek(), key='datePick', size=(22, 1)),sg.CalendarButton("Select Date", key='date', disabled=False, format='%d/%m/%Y')],
     # [sg.CalendarButton("Select Start Date", key='date', disabled=False, format='%d/%m/%Y')],
-    [sg.Radio('Translate Data', group_id='RADIO1', default=True), sg.Radio('Raw Data', group_id='RADIO1', default=False)],
+    [sg.Radio('Translate Data', group_id='RADIO1', default=False), sg.Radio('Raw Data', group_id='RADIO1', default=True)],
     [sg.Button('Harvest'), sg.Button('Collect'), sg.Button('Clear Log'), sg.Button('path')]
 ]
 
 coly = [
     [sg.Table(key='-Table-', headings=['Terminal ID', 'Software Version'],
-     values=[['TID placeholder', 'TSV placeholder']], col_widths=500,
-     num_rows=7)]
+     values=[['', '']], col_widths=500,
+     num_rows=7, enable_events=True)]
 ]
 
 colz = [sg.Output(size=(81, 9), key='-output-')]
 
 # ----- Set Theme ----- #
-sg.theme('Purple')
+# sg.theme('BlueMono')
 
 # ----- Layout Management ----- #
 layout = [
-    [sg.Column(colx), sg.Column(coly)],
+    [sg.Column(colx),sg.VerticalSeparator(pad=None), sg.Column(coly)],
     [sg.Output(size=(81, 9), key='-output-')]
 ]
-window = sg.Window('Pilot Report', layout)
+window = sg.Window(f'Pilot Report - {__version__}', layout)
 
 
 if __name__=='__main__':
@@ -182,6 +230,7 @@ if __name__=='__main__':
         if event == sg.WIN_CLOSED or event == 'Exit':
             break
         elif event == 'Harvest':
+            window['-Table-'].update('')
             process_rpt_files()
             logging.info('Harvest (Event) Selected')
         elif event == 'Clear Log':
@@ -189,4 +238,5 @@ if __name__=='__main__':
         elif event == 'path':
             print(load_config())
         elif event == 'Collect':
-            pass
+            process_report(grab_user_selected_id(values['-Table-']))
+        logging.info(f' {event} event called')
