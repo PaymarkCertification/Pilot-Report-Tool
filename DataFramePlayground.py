@@ -51,7 +51,7 @@ def error_handler(func: typing.Callable):
         try:
             return func(*args, **kwargs)
         except:
-            print(f'function {func.__name__} encountered an exception: {sys.exc_info()[0], sys.exc_info()[1]}') # Outputs to console
+            print(f'function <{func.__name__}> encountered an exception: {sys.exc_info()[0], sys.exc_info()[1]}') # Outputs to console
             logging.info(f'{func.__name__, sys.exc_info()[0], sys.exc_info()[1]}')
     return wrapper
 
@@ -99,6 +99,7 @@ def set_excel_format(excel_name: str):
         for row in ws.iter_rows(min_row=2, min_col=6,max_col=6):
             rower = str(list(row))[21:-2]  # TODO: Add regex to avoid inconsistent type access.
             for cell in row:
+                
                 if cell.value is None or cell.value == '\n':
                     continue
                 if cell.value:
@@ -106,11 +107,11 @@ def set_excel_format(excel_name: str):
                     stan = int(cell.value)
                     currentstan = stan
                     if currentstan != laststan + 1 and row != 0:
-                        ws[rower].fill = PatternFill(start_color=RED_FORMAT,
+                        cell.fill = PatternFill(start_color=RED_FORMAT,
                                                     end_color=RED_FORMAT,
                                                     fill_type='solid')
                     else:
-                        ws[rower].fill = PatternFill(start_color=GREEN_FORMAT,
+                        cell.fill = PatternFill(start_color=GREEN_FORMAT,
                                                     end_color=GREEN_FORMAT,
                                                     fill_type='solid')
                 else:
@@ -151,7 +152,7 @@ def process_rpt_files():
         f'\nCurrent Working Dir: {load_config()}')
         logging.info(' Could not load file')
 
-    print(f'Harvesting data from {values["datePick"]}')
+    print(f"Harvesting data from {values['datePick']}")
     fileDirectory = [f for f in glob.glob("*.txt")]
     formattedDate=[]
     try:
@@ -167,7 +168,7 @@ def process_rpt_files():
         convertedDateObject = datetime.datetime.strptime(date, '%y%m%d') # converts stripped file name into date object
         logging.info(f' Convert str "{date}" to date object "{convertedDateObject}"')
 
-        if convertedDateObject >= last_days(): 
+        if convertedDateObject >= last_days() and convertedDateObject <=  datetime.datetime.strptime(values['datePick'],'%d/%m/%Y')+datetime.timedelta(7):
             dateObjects.append(convertedDateObject.strftime('%y%m%d')) # adds the date of the file to list if they are within the last 7 days
             logging.info(f' {convertedDateObject} appended to list')
 
@@ -216,7 +217,7 @@ def process_report(user_id_list: list):
                 .to_excel(writer, index=False, sheet_name=userID)  # set sheet name and writes sheet data with terminal ID from dataframe
             worksheet = writer.book[userID]
 
-            print(f'processing {userID} data')
+            print(f'Processing Terminal ID: {userID}')
 
             # column formatting on DF
             dims = {}
