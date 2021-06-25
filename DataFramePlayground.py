@@ -210,12 +210,12 @@ def process_report(user_id_list: list):
         writer = pd.ExcelWriter(f'{filename}', engine='openpyxl')
         global frameDataForProcessing
         for userID in user_id_list:
-            # index_len = str(len(frameDataForProcessing["Terminal"].index == userID))
+            # index_len = str(len(frameDataForProcessing["Terminal"].index == userID)) # FuturesError warning raised when comparing np to py scalar
             frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID]\
                 .to_excel(writer, index=False, sheet_name=userID)  # set sheet name and writes sheet data with terminal ID from dataframe
             worksheet = writer.book[userID]
 
-            print(f'processing {userID} data to excel')
+            print(f'processing {userID} data')
 
             # column formatting on DF
             dims = {}
@@ -233,7 +233,7 @@ def process_report(user_id_list: list):
             #     col_idx = frameDataForProcessing.columns.get_loc(column)
             #     writer.sheets[str(userID)].set_column(col_idx, col_idx, column_width)
         writer.save()
-        print('Applying formatting to excel')
+        print('Applying formatting')
         set_excel_format(filename)
         print('Excel saved')
 
