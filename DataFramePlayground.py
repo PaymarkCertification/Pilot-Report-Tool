@@ -78,7 +78,7 @@ def lastweek(string: int = 1) -> typing.Union[str, datetime.datetime]:
 @error_handler
 def last_days() -> datetime.datetime:
     date = values['datePick']
-    logging.info(f'date returned from widget: {date}')
+    logging.info(f'Date returned from Widget: {date}')
     selected_date = datetime.datetime.strptime(date,'%d/%m/%Y')
     week = selected_date - datetime.timedelta(days=7)    
     return week
