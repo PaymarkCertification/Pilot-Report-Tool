@@ -100,13 +100,10 @@ def set_excel_format(excel_name: str):
             for cell in row:
                 if cell.value is None or cell.value == '\n':
                     continue
-                # if cell.value == '\n':
-                #     continue
                 if cell.value:
                     laststan = currentstan
                     stan = int(cell.value)
                     currentstan = stan
-                    print(f'row {row},rower: {rower}, stan: {stan}, currentstan: {currentstan}, laststan: {laststan}')
                     if currentstan != laststan + 1 and row != 0:
                         ws[rower].fill = PatternFill(start_color=RED_FORMAT,
                                                     end_color=RED_FORMAT,
@@ -183,7 +180,8 @@ def process_rpt_files():
         concatentate_csvs(list_of_files)   
     else:
         print("No files found for selected date range. Select another date.")
-        
+
+@error_handler
 def grab_user_selected_id(selectionList: list) -> list:
     if not selectionList:
         print("\n")
@@ -206,14 +204,13 @@ def process_report(user_id_list: list):
         print("No ID(s) selected for processing")
     else:
         foldername = sg.PopupGetFolder('Select folder', no_window=True)
-        print(f'Saving file to {foldername}')
         date_time = datetime.datetime.today().strftime("%d-%m-%Y %H%M%S")
         global filename; filename = f'{foldername}/Pilot_Report_{date_time}.xlsx'
-        print('File Name set to: ',filename) 
+        print('File: ',filename) 
         writer = pd.ExcelWriter(f'{filename}', engine='openpyxl')
         global frameDataForProcessing
         for userID in user_id_list:
-            index_len = str(len(frameDataForProcessing["Terminal"].index == userID))
+            # index_len = str(len(frameDataForProcessing["Terminal"].index == userID))
             frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID]\
                 .to_excel(writer, index=False, sheet_name=userID)  # set sheet name and writes sheet data with terminal ID from dataframe
             worksheet = writer.book[userID]
@@ -235,9 +232,6 @@ def process_report(user_id_list: list):
             #     column_width = max(frameDataForProcessing[column].astype(str).map(len).max(), len(column))
             #     col_idx = frameDataForProcessing.columns.get_loc(column)
             #     writer.sheets[str(userID)].set_column(col_idx, col_idx, column_width)
-       
-
-        
         writer.save()
         print('Applying formatting to excel')
         set_excel_format(filename)
@@ -280,7 +274,6 @@ if __name__=='__main__':
         elif event == 'Harvest':
             window['-Table-'].update('')
             process_rpt_files()
-            logging.info('Harvest (Event) Selected')
         elif event == 'Clear Log':
             window.FindElement('-output-').Update('')
         elif event == 'path':
