@@ -9,12 +9,20 @@ import subprocess
 import sys
 import pandas as pd
 import numpy as np
+import xlsxwriter
+from openpyxl.styles import PatternFill
 __version__ = '0.0.2'
+
+
 
 # ----- var ----- #
 # Initialize our containers
+filename = ''
 tableList=[]
-frameDataForProcessing= pd.DataFrame()
+frameDataForProcessing = pd.DataFrame()
+# Const
+RED_FORMAT = 'FFFF0000'
+GREEN_FORMAT = '008000'
 
 # ----- Logging Method ----- #
 class Handler(logging.StreamHandler):
@@ -39,6 +47,7 @@ class Handler(logging.StreamHandler):
         )
 
 # ----- exception handling func ----- #
+# decorator 
 def error_handler(func: typing.Callable):
     def wrapper(*args, **kwargs):
         try:
@@ -76,21 +85,40 @@ def last_days() -> datetime.datetime:
     week = selected_date - datetime.timedelta(days=7)    
     return week
 
-#TODO
-def highlights(userId):
-        check_seq = []
-        currentStan = 0
-        
-        global frameDataForProcessing; frameDataForProcessing['Terminal'] == userId
-        for i in frameDataForProcessing['Stan #'][1:]:
-            lastStan = currentStan
-            currentStan +=i
-            if currentStan == lastStan + 1:
-                frameDataForProcessing.style.apply(["background: green"])
-            elif lastStan == 0:
-                ...
-            else:
-                frameDataForProcessing.style.apply(["background: red"])
+@error_handler
+def set_excel_format(excel_name: str):
+    import openpyxl
+    from openpyxl.styles import PatternFill
+    currentstan = 0
+    laststan = 0
+    workbook = openpyxl.load_workbook(excel_name)
+    ws = workbook.active
+    for sheet in workbook.sheetnames:
+        ws = workbook[sheet]
+        for row in ws.iter_rows(min_row=2, min_col=6,max_col=6):
+            rower = str(list(row))[21:-2]
+            for cell in row:
+                if cell.value is None or cell.value == '\n':
+                    continue
+                # if cell.value == '\n':
+                #     continue
+                if cell.value:
+                    laststan = currentstan
+                    stan = int(cell.value)
+                    currentstan = stan
+                    print(f'row {row},rower: {rower}, stan: {stan}, currentstan: {currentstan}, laststan: {laststan}')
+                    if currentstan != laststan + 1 and row != 0:
+                        ws[rower].fill = PatternFill(start_color=RED_FORMAT,
+                                                    end_color=RED_FORMAT,
+                                                    fill_type='solid')
+                    else:
+                        ws[rower].fill = PatternFill(start_color=GREEN_FORMAT,
+                                                    end_color=GREEN_FORMAT,
+                                                    fill_type='solid')
+                else:
+                    pass
+    workbook.save(excel_name)
+    workbook.close()
 
 @error_handler
 def process_rpt_files():
@@ -167,6 +195,8 @@ def grab_user_selected_id(selectionList: list) -> list:
         print(f'Terminal ID(s) selected for report:\n{user_id}\n')    
         return user_id
 
+
+
 @error_handler
 def process_report(user_id_list: list):
     """
@@ -178,22 +208,40 @@ def process_report(user_id_list: list):
         foldername = sg.PopupGetFolder('Select folder', no_window=True)
         print(f'Saving file to {foldername}')
         date_time = datetime.datetime.today().strftime("%d-%m-%Y %H%M%S")
-        writer = (pd.ExcelWriter(f'{foldername}/Pilot_Report_{date_time}.xlsx', engine='xlsxwriter'))
-        try:
-            global frameDataForProcessing
-            for userID in user_id_list:
-                # highlights(userID)
-                # print(frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID])
-                frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID].to_excel(writer, index=False, sheet_name=userID) # set sheet name and writes sheet data with terminal ID from dataframe
-                print(f'processing {userID} data to excel')
-                for column in frameDataForProcessing:
-                    column_width = max(frameDataForProcessing[column].astype(str).map(len).max(), len(column))
-                    col_idx = frameDataForProcessing.columns.get_loc(column)
-                    writer.sheets[str(userID)].set_column(col_idx, col_idx, column_width)
-            writer.save()
-            print('Excel saved')
-        except TypeError:
-            print('No IDs to process')
+        global filename; filename = f'{foldername}/Pilot_Report_{date_time}.xlsx'
+        print('File Name set to: ',filename) 
+        writer = pd.ExcelWriter(f'{filename}', engine='openpyxl')
+        global frameDataForProcessing
+        for userID in user_id_list:
+            index_len = str(len(frameDataForProcessing["Terminal"].index == userID))
+            frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID]\
+                .to_excel(writer, index=False, sheet_name=userID)  # set sheet name and writes sheet data with terminal ID from dataframe
+            worksheet = writer.book[userID]
+
+            print(f'processing {userID} data to excel')
+
+            # column formatting on DF
+            dims = {}
+            for row in worksheet.rows:
+                for cell in row:
+                    if cell.value:
+                        dims[cell.column_letter] = max((dims.get(cell.column_letter, 0), len(str(cell.value))))
+            for col, value in dims.items():
+                worksheet.column_dimensions[col].width = value
+
+            # TODO: Remove setter loop.
+            # column setter for xlsxwriter engine
+            # for column in frameDataForProcessing:
+            #     column_width = max(frameDataForProcessing[column].astype(str).map(len).max(), len(column))
+            #     col_idx = frameDataForProcessing.columns.get_loc(column)
+            #     writer.sheets[str(userID)].set_column(col_idx, col_idx, column_width)
+       
+
+        
+        writer.save()
+        print('Applying formatting to excel')
+        set_excel_format(filename)
+        print('Excel saved')
 
 # ----- Column Definition ----- #
 colx = [
