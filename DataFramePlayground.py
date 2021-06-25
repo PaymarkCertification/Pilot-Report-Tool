@@ -20,9 +20,7 @@ __version__ = '0.0.2'
 filename = ''
 tableList=[]
 frameDataForProcessing = pd.DataFrame()
-# Const
-RED_FORMAT = 'FFFF0000'
-GREEN_FORMAT = '008000'
+
 
 # ----- Logging Method ----- #
 class Handler(logging.StreamHandler):
@@ -30,11 +28,11 @@ class Handler(logging.StreamHandler):
     def __init__(self):
         logging.StreamHandler.__init__(self)
 
-    def emit(self, record):
-        global buffer
-        record = f'{record.name}, [{record.levelname}], {record.message}'
-        buffer = f'{buffer}\n{record}'.strip()
-        window['-output-'].update(value=buffer)
+    # def emit(self, record):
+    #     global buffer
+    #     record = f'{record.name}, [{record.levelname}], {record.message}'
+    #     buffer = f'{buffer}\n{record}'.strip()
+    #     window['-output-'].update(value=buffer)
 
     @staticmethod
     def load_logging(loggingLevel: int = logging.INFO) -> logging:
@@ -89,6 +87,9 @@ def last_days() -> datetime.datetime:
 def set_excel_format(excel_name: str):
     import openpyxl
     from openpyxl.styles import PatternFill
+    # Const
+    RED_FORMAT = 'FFFF0000'
+    GREEN_FORMAT = '008000'
     currentstan = 0
     laststan = 0
     workbook = openpyxl.load_workbook(excel_name)
@@ -96,7 +97,7 @@ def set_excel_format(excel_name: str):
     for sheet in workbook.sheetnames:
         ws = workbook[sheet]
         for row in ws.iter_rows(min_row=2, min_col=6,max_col=6):
-            rower = str(list(row))[21:-2]
+            rower = str(list(row))[21:-2]  # TODO: Add regex to avoid inconsistent type access.
             for cell in row:
                 if cell.value is None or cell.value == '\n':
                     continue
