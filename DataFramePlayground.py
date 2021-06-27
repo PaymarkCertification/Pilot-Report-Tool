@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import xlsxwriter
 from openpyxl.styles import PatternFill
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 
 
@@ -97,7 +97,6 @@ def set_excel_format(excel_name: str):
     for sheet in workbook.sheetnames:
         ws = workbook[sheet]
         for row in ws.iter_rows(min_row=2, min_col=6,max_col=6):
-            rower = str(list(row))[21:-2]  # TODO: Add regex to avoid inconsistent type access.
             for cell in row:
                 if cell.value is None or cell.value == '\n':
                     continue
@@ -123,7 +122,9 @@ def process_rpt_files():
     def concatentate_csvs(list_of: list) -> pd.DataFrame:
         li = []
         logging.info(' Attempting to concatenate')
+        
         try:
+            
             for filename in list_of:
                 df = pd.read_csv(filename, index_col=None, header=0, sep='|')
                 li.append(df)
@@ -138,8 +139,9 @@ def process_rpt_files():
             
             global tableList; tableList.append(tableframe[['Terminal','Card Number']].values.tolist())
             window.FindElement('-Table-').Update(tableframe[['Terminal','Card Number']].values.tolist())
-        except:
-            print(f' {sys.exc_info()[0], sys.exc_info()[1]}')
+        except ValueError as e:
+            print(f'Err: Unable to perform function concatenate csvs. Check date range or RPT files.')
+            # print(f' {sys.exc_info()[0], sys.exc_info()[1]}')
             logging.info(f' {sys.exc_info()[0], sys.exc_info()[1]}')
         
            
@@ -167,7 +169,7 @@ def process_rpt_files():
         convertedDateObject = datetime.datetime.strptime(date, '%y%m%d') # converts stripped file name into date object
         logging.info(f' Convert str "{date}" to date object "{convertedDateObject}"')
 
-        if convertedDateObject >= last_days(): 
+        if convertedDateObject >= datetime.datetime.strptime(values['datePick'], '%d/%m/%Y') and convertedDateObject <= datetime.datetime.strptime(values['datePick'], '%d/%m/%Y')+ datetime.timedelta(7): 
             dateObjects.append(convertedDateObject.strftime('%y%m%d')) # adds the date of the file to list if they are within the last 7 days
             logging.info(f' {convertedDateObject} appended to list')
 
@@ -176,9 +178,12 @@ def process_rpt_files():
         for fileItem in fileDirectory:
             if date in fileItem:
                 list_of_files.append(fileItem) # Returns the filename for processing if the dates are in the filename
-    if list_of_files != '':
+    if not list_of_files:
+        print('No files found for selected date range. Select another date.\n')
+    elif list_of_files != '':
+        print()
         print('Processing the following files:\n', list_of_files, '\n')
-        concatentate_csvs(list_of_files)   
+        concatentate_csvs(list_of_files)
     else:
         print("No files found for selected date range. Select another date.")
 
