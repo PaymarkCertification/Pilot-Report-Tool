@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import xlsxwriter
 from openpyxl.styles import PatternFill
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 
 
@@ -99,9 +99,7 @@ def set_excel_format(excel_name: str):
         for row in ws.iter_rows(min_row=2, min_col=6,max_col=6):
             for cell in row:
                 
-                if cell.value is None or cell.value == '\n':
-                    continue
-                if cell.value:
+                if isinstance(cell.value, int) or isinstance(cell.value, str) and (cell.value).isnumeric():
                     laststan = currentstan
                     stan = int(cell.value)
                     currentstan = stan
@@ -112,7 +110,11 @@ def set_excel_format(excel_name: str):
                     else:
                         cell.fill = PatternFill(start_color=GREEN_FORMAT,
                                                     end_color=GREEN_FORMAT,
-                                                    fill_type='solid')
+                                                    fill_type='solid')        
+                elif cell.value is None or cell.value == '\n' or isinstance(cell.value, str) and (cell.value).isalnum():
+                    # print(type(cell.value), f'{cell.value}')
+                    continue
+
                 else:
                     pass
     workbook.save(excel_name)
@@ -131,6 +133,7 @@ def process_rpt_files():
                 li.append(df)
             dframe = pd.concat(li, axis=0, ignore_index=True)
             dframe.replace(np.nan, '', regex=True)
+            dframe['Stan #'] = dframe['Stan #'].apply(pd.to_numeric, errors='ignore')
             dframe['Card Number'] = dframe['Card Number'].convert_dtypes(convert_integer=False, convert_boolean=False)
             dframe['Terminal'] = dframe['Terminal'].apply(str)
             global frameDataForProcessing; frameDataForProcessing = dframe
@@ -170,11 +173,7 @@ def process_rpt_files():
         convertedDateObject = datetime.datetime.strptime(date, '%y%m%d') # converts stripped file name into date object
         logging.info(f' Convert str "{date}" to date object "{convertedDateObject}"')
 
-<<<<<<< HEAD
         if convertedDateObject >= datetime.datetime.strptime(values['datePick'], '%d/%m/%Y') and convertedDateObject <= datetime.datetime.strptime(values['datePick'], '%d/%m/%Y')+ datetime.timedelta(7): 
-=======
-        if convertedDateObject >= last_days() and convertedDateObject <=  datetime.datetime.strptime(values['datePick'],'%d/%m/%Y')+datetime.timedelta(7):
->>>>>>> a8f68ef05918fc34e42084e477f576e27e1a44cf
             dateObjects.append(convertedDateObject.strftime('%y%m%d')) # adds the date of the file to list if they are within the last 7 days
             logging.info(f' {convertedDateObject} appended to list')
 
