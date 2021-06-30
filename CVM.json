@@ -1,0 +1,12 @@
+{
+    "0": "Not Authenticated",
+    "1": "PIN",
+    "2": "Electronic Signature Analysis",
+    "3": "Biometrics",
+    "4": "Biographic",
+    "5": "Manual SIgnature Verification",
+    "6": "Other Manual Verification",
+    "A": "Offline Plaintext PIN",
+    "B": "Offline Enciphered PIN",
+    "C": "No CVM"
+}
