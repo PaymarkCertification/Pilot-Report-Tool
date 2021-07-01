@@ -6,11 +6,14 @@ def load_json(json_file: str) -> dict:
         return json.load(data)        
 
 r = load_json('Routing.json')
+action = load_json('ActionCode.json')
+
+def remap(df, col, dict):
+    return df[col].map(dict).fillna(df[col])
 
 def translate(s: str) -> str:
     def translate_routing(BIN: str, bank: str) -> str:
-        s.split(" ")[0]
-        return s.split(" ")[1]+ " " + bank
+        return BIN.split(" ")[1]+ " " + bank
 
     pos = re.search('\d{6}\s\w', s)
     if pos:
@@ -24,13 +27,14 @@ def translate(s: str) -> str:
         return s
 
 
-
-
 import pandas as pd
 df= pd.DataFrame({'Routing':["308326 I","308443 I", "111111 N", "639491 A"],
-                'STAN':[1, 2, 0, 4]
+                'STAN':[1, 2, 0, 4],
+                'Resp Code':['000',000,'none','007']
 })
 df['Routing'] = df['Routing'].apply(translate)
+print(df)
+df['Resp Code']=remap(df, 'Resp Code', action)
 print(df)
 
 

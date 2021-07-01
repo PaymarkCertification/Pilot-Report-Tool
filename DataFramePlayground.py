@@ -10,7 +10,9 @@ import sys
 import pandas as pd
 import numpy as np
 import xlsxwriter
+from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
+import translate
 __version__ = '0.0.4'
 
 
@@ -21,6 +23,12 @@ filename = ''
 tableList=[]
 frameDataForProcessing = pd.DataFrame()
 
+#----- data -----#
+ROUT = translate.load_json('Routing.json')
+ENT = translate.load_json('EntryMode.json')
+CVM = translate.load_json('CVM.json')
+RC = translate.load_json('TerminalHandlerResponse.json')
+ACT = translate.load_json('ActionCode.json')
 
 # ----- Logging Method ----- #
 class Handler(logging.StreamHandler):
@@ -98,7 +106,6 @@ def set_excel_format(excel_name: str):
         ws = workbook[sheet]
         for row in ws.iter_rows(min_row=2, min_col=6,max_col=6):
             for cell in row:
-                
                 if isinstance(cell.value, int) or isinstance(cell.value, str) and (cell.value).isnumeric():
                     laststan = currentstan
                     stan = int(cell.value)
@@ -136,6 +143,7 @@ def process_rpt_files():
             dframe['Stan #'] = dframe['Stan #'].apply(pd.to_numeric, errors='ignore')
             dframe['Card Number'] = dframe['Card Number'].convert_dtypes(convert_integer=False, convert_boolean=False)
             dframe['Terminal'] = dframe['Terminal'].apply(str)
+            dframe['Resp Code'] = dframe['Resp Code'].str.rstrip()
             global frameDataForProcessing; frameDataForProcessing = dframe
             tableframe = dframe.groupby(['Terminal','Card Number'], as_index=False).last()
             tableframe = tableframe[tableframe['Card Number'].str.contains('^[A-Za-z]')]
@@ -219,6 +227,18 @@ def process_report(user_id_list: list):
         print('File: ',filename) 
         writer = pd.ExcelWriter(f'{filename}', engine='openpyxl')
         global frameDataForProcessing
+
+        if values['R1']:
+            frameDataForProcessing['Auth By'] = frameDataForProcessing['Auth By'].apply(translate.translate)
+            frameDataForProcessing['Resp Code'] = translate.remap(frameDataForProcessing, 'Resp Code', ACT)
+            frameDataForProcessing['Ent Mod'] = translate.remap(frameDataForProcessing, 'Ent Mod', ENT)
+            frameDataForProcessing['Pin Sig'] = translate.remap(frameDataForProcessing, 'Pin Sig', CVM)
+            frameDataForProcessing['Term Resp'] = translate.remap(frameDataForProcessing, 'Term Resp', RC)
+            
+            
+        else:
+            pass   
+
         for userID in user_id_list:
             # index_len = str(len(frameDataForProcessing["Terminal"].index == userID)) # FuturesError warning raised when comparing np to py scalar
             frameDataForProcessing.loc[frameDataForProcessing['Terminal'].astype(str) == userID]\
@@ -251,7 +271,7 @@ def process_report(user_id_list: list):
 colx = [
     [sg.Text("Date:"), sg.Input(lastweek(), key='datePick', size=(22, 1)),sg.CalendarButton("Select Date", key='date', disabled=False, format='%d/%m/%Y')],
     # [sg.CalendarButton("Select Start Date", key='date', disabled=False, format='%d/%m/%Y')],
-    [sg.Radio('Translate Data', group_id='RADIO1', default=False), sg.Radio('Raw Data', group_id='RADIO1', default=True)],
+    [sg.Radio('Translate Data', group_id='RADIO1', default=True, key='R1'), sg.Radio('Raw Data', group_id='RADIO1', default=False, key='R2')],
     [sg.Button('Harvest'), sg.Button('Collect'), sg.Button('Clear Log'), sg.Button('path')]
 ]
 

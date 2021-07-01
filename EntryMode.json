@@ -1,0 +1,11 @@
+{
+    "0": "Unspecified",
+    "1": "Manual, No Terminal",
+    "2": "Magnetic Stripe Reader",
+    "3": "Bar Code Reader",
+    "4": "OCR",
+    "5": "Integrated Circuit Card Reader (EMV)",
+    "6": "Key Entered",
+    "A": "Contactless Magstripe",
+    "M": "Contactless Chip"
+}
