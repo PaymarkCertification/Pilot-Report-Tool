@@ -13,7 +13,7 @@ import xlsxwriter
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
 import translate
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 
 
@@ -24,11 +24,12 @@ tableList=[]
 frameDataForProcessing = pd.DataFrame()
 
 #----- data -----#
-ROUT = translate.load_json('Routing.json')
-ENT = translate.load_json('EntryMode.json')
-CVM = translate.load_json('CVM.json')
-RC = translate.load_json('TerminalHandlerResponse.json')
-ACT = translate.load_json('ActionCode.json')
+data = translate.load_json("Translate_data.json")
+ROUT = data['Routing']
+ENT = data['EntryMode']
+CVM = data['CVM']
+RC = data['TH Response']
+ACT = data['ActionCode']
 
 # ----- Logging Method ----- #
 class Handler(logging.StreamHandler):
@@ -229,6 +230,7 @@ def process_report(user_id_list: list):
         global frameDataForProcessing
 
         if values['R1']:
+            print('Translating data')
             frameDataForProcessing['Auth By'] = frameDataForProcessing['Auth By'].apply(translate.translate)
             frameDataForProcessing['Resp Code'] = translate.remap(frameDataForProcessing, 'Resp Code', ACT)
             frameDataForProcessing['Ent Mod'] = translate.remap(frameDataForProcessing, 'Ent Mod', ENT)
