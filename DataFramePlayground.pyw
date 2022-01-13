@@ -115,12 +115,12 @@ def set_excel_format(excel_name: str):
                     currentstan = stan
                     if currentstan != laststan + 1 and row != 0:
                         cell.fill = PatternFill(start_color=RED_FORMAT,
-                                                    end_color=RED_FORMAT,
-                                                    fill_type='solid')
+                                                end_color=RED_FORMAT,
+                                                fill_type='solid')
                     else:
                         cell.fill = PatternFill(start_color=GREEN_FORMAT,
-                                                    end_color=GREEN_FORMAT,
-                                                    fill_type='solid')        
+                                                end_color=GREEN_FORMAT,
+                                                fill_type='solid')
                 elif cell.value is None or cell.value == '\n' or isinstance(cell.value, str) and (cell.value).isalnum():
                     # print(type(cell.value), f'{cell.value}')
                     continue
@@ -211,7 +211,7 @@ def grab_user_selected_id(selectionList: list) -> list:
     if not selectionList:
         print("\n")
     else:
-        users_list =[]
+        users_list = []
         for i in values['-Table-']:
             users_list.append(tableList[0][i])
         user_id=[item[0] for item in users_list]
@@ -230,8 +230,9 @@ def process_report(user_id_list: list):
     else:
         foldername = sg.PopupGetFolder('Select folder', no_window=True)
         date_time = datetime.datetime.today().strftime("%d-%m-%Y %H%M%S")
-        global filename; filename = f'{foldername}/Pilot_Report_{date_time}.xlsx'
-        print('File: ',filename) 
+        global filename
+        filename = f'{foldername}/Pilot_Report_{date_time}.xlsx'
+        print('File: ', filename)
         writer = pd.ExcelWriter(f'{filename}', engine='openpyxl')
         global frameDataForProcessing
 
@@ -302,7 +303,7 @@ layout = [
 window = sg.Window(f'Pilot Report - {__version__}', layout)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     Handler.load_logging()
     
     while True:
