@@ -15,7 +15,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
 import translate
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 
 
@@ -153,7 +153,7 @@ def process_rpt_files():
             # dframe['Auth By'] = dframe['Auth By'].convert_dtypes(convert_integer=False, convert_boolean=False).fillna('', inplace=True)
             global frameDataForProcessing; frameDataForProcessing = dframe
             tableframe = dframe.groupby(['Terminal','Card Number'], as_index=False).last()
-            tableframe = tableframe[tableframe['Card Number'].str.contains('^[A-Za-z]')]
+            tableframe = tableframe[tableframe['Card Number'].str.contains('[A-Za-z]')]
 
             
             global tableList; tableList.append(tableframe[['Terminal','Card Number']].values.tolist())
