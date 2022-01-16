@@ -157,7 +157,7 @@ def process_rpt_files():
 
             
             global tableList; tableList.append(tableframe[['Terminal','Card Number']].values.tolist())
-            window.FindElement('-Table-').Update(tableframe[['Terminal','Card Number']].values.tolist())
+            window['-Table-'].Update(tableframe[['Terminal','Card Number']].values.tolist())
             # print(frameDataForProcessing.loc[frameDataForProcessing['Auth By'].str.len() >20])
         except ValueError as e:
             print(f'Err: Unable to perform function concatenate csvs. Check date range or RPT files.')
@@ -314,7 +314,7 @@ if __name__ == '__main__':
             window['-Table-'].update('')
             process_rpt_files()
         elif event == 'Clear Log':
-            window.FindElement('-output-').Update('')
+            window['-output-'].Update('')
         elif event == 'path':
             print(load_config())
         elif event == 'Collect':
