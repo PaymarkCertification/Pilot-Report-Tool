@@ -15,7 +15,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill
 import translate
 
-__version__ = '0.0.7'
+__version__ = '0.0.9'
 
 
 
@@ -46,12 +46,12 @@ class Handler(logging.StreamHandler):
     #     window['-output-'].update(value=buffer)
 
     @staticmethod
-    def load_logging(loggingLevel: int = logging.INFO) -> logging:
+    def load_logging(loggingLevel: int = logging.WARNING) -> logging:
         return logging.basicConfig(
             level=loggingLevel, 
             format='%(asctime)s %(levelname)s:%(message)s', 
             handlers=[
-                logging.StreamHandler()
+                logging.FileHandler("RPT.log")
             ]
         )
 
@@ -71,7 +71,8 @@ def load_config() -> str:
     """Directory for RPT files. Set accordingly."""
     config = configparser.ConfigParser()
     config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Pilot_Report_Config.ini'))
-    path = config.get('path', 'rpt_file')
+    # path = config.get('path', 'rpt_file')
+    path = "O:/Cert/14. Pilot report files/RPT127" # hardcode path - ini file deleted in gui when compiled to cx_freeze
     return path
 
 @error_handler
